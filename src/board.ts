@@ -1,10 +1,6 @@
-type Field = {
-  value: number;
-  victoryPoints: number;
-  ruby: boolean;
-};
+import type { Field } from "./types";
 
-const Pot: Field[] = [
+export const Pot: ReadonlyArray<Field> = [
   { value: 0, victoryPoints: 0, ruby: false },
   { value: 1, victoryPoints: 0, ruby: false },
   { value: 2, victoryPoints: 0, ruby: false },
