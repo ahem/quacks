@@ -4,15 +4,7 @@ export type Field = Readonly<{
     ruby: boolean;
 }>;
 
-export type Color =
-    | "white"
-    | "orange"
-    | "green"
-    | "blue"
-    | "red"
-    | "yellow"
-    | "purple"
-    | "black";
+export type Color = "white" | "orange" | "green" | "blue" | "red" | "yellow" | "purple" | "black";
 
 export type Chip = Readonly<{
     value: 1 | 2 | 4;
