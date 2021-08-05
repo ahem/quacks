@@ -1,3 +1,4 @@
+mod bag;
 mod chip;
 mod potion_phase;
 

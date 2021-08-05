@@ -1,56 +1,100 @@
+use crate::bag::Bag;
 use crate::chip::{Chip, Color};
 use rand::prelude::*;
+use std::collections::HashMap;
 
-pub enum Action {
-    Draw,
-    Stop,
-    Place,
-    PlaceAndSelect(Chip),
+pub trait Player {
+    fn end_turn(&self, bag: &Bag, potion: &Potion) -> bool;
+    fn spend_flask(&self, bag: &Bag, potion: &Potion) -> bool;
 }
 
-struct State {
-    chip: Option<Chip>,
-    bag: Vec<Chip>,
-    potion: Vec<Chip>,
+pub struct Flask {
+    full: bool,
 }
 
-fn collect_possible_actions(state: &State, rng: &mut rand::rngs::ThreadRng) -> Vec<Action> {
-    // if state.potion.is_exploded() { vec![Action::Stop]; };
-    return match state.chip {
-        None => vec![Action::Stop, Action::Draw],
-        Some(chip) => match chip.color() {
-            Color::White
-            | Color::Orange
-            | Color::Red
-            | Color::Green
-            | Color::Black
-            | Color::Yellow
-            | Color::Purple => vec![Action::Place],
-            Color::Blue => {
-                let val = chip.value();
-                let options: Vec<Action> = state
-                    .bag
-                    .choose_multiple(rng, val.into())
-                    .map(|x| Action::PlaceAndSelect(x.clone()))
-                    .collect();
-            }
-        },
-    };
+impl Flask {
+    pub fn fill(&mut self) {
+        self.full = true;
+    }
+
+    pub fn drain(&mut self) {
+        self.full = false;
+    }
+
+    pub fn is_full(&self) -> bool {
+        return self.full;
+    }
 }
 
-pub fn run(
-    bag: &Vec<Chip>,
+pub struct Potion {
+    chips: HashMap<u8, Chip>,
+}
+
+impl Potion {
+    pub fn new() -> Potion {
+        return Potion {
+            chips: HashMap::new(),
+        };
+    }
+    pub fn last_idx(&self) -> &u8 {
+        return self.chips.keys().max().unwrap_or(&0);
+    }
+
+    pub fn last(&self) -> Option<&Chip> {
+        return self.chips.get(self.last_idx());
+    }
+
+    pub fn remove_last(&mut self) -> Option<Chip> {
+        let idx = self.last_idx().to_owned();
+        return self.chips.remove(&idx);
+    }
+
+    pub fn add_chip(&mut self, chip: Chip) {
+        self.chips.insert(self.last_idx() + chip.value(), chip);
+    }
+    pub fn add_chip_with_bonus(&mut self, chip: Chip, bonus: u8) {
+        self.chips
+            .insert(self.last_idx() + chip.value() + bonus, chip);
+    }
+}
+
+pub fn run<T>(
+    bag: &mut Bag,
+    flask: &mut Flask,
     rng: &mut rand::rngs::ThreadRng,
-    choose_action: fn(Vec<Action>) -> Action,
-) -> Vec<Chip> {
-    let state = State {
-        chip: None,
-        bag: bag.clone(),
-        potion: Vec::new(),
-    };
+    player: &impl Player,
+) -> Potion {
+    let mut potion: Potion = Potion::new();
 
-    let possible_actions = collect_possible_actions(&state, &mut rng);
-    let action = choose_action(possible_actions);
+    loop {
+        let chip = bag.draw(rng);
 
-    return state.potion;
+        match chip.color() {
+            Color::White => {
+                potion.add_chip(chip);
+
+                if flask.is_full() {
+                    if player.spend_flask(&bag, &potion) {
+                        flask.drain();
+                        bag.add_chip(potion.remove_last().unwrap());
+                    }
+                }
+            }
+            Color::Orange | Color::Green | Color::Black | Color::Yellow | Color::Purple => {
+                potion.add_chip(chip);
+            }
+            Color::Red => {
+                // TODO: search for orange and use add_chip_with_bonus if there is a bonus
+                potion.add_chip(chip);
+            }
+            Color::Blue => {
+                potion.add_chip(chip);
+                // TODO: draw and choose
+            }
+        };
+
+        if player.end_turn(&bag, &potion) {
+            return potion;
+        }
+    }
 }
