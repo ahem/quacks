@@ -27,12 +27,14 @@ impl Flask {
 }
 
 pub struct Potion {
+    initial: u8,
     chips: HashMap<u8, Chip>,
 }
 
 impl Potion {
-    pub fn new() -> Potion {
+    pub fn new(initial: u8) -> Potion {
         return Potion {
+            initial,
             chips: HashMap::new(),
         };
     }
@@ -56,16 +58,29 @@ impl Potion {
         self.chips
             .insert(self.last_idx() + chip.value() + bonus, chip);
     }
+
+    pub fn count_chips(&self, color: Color) -> usize {
+        return self.chips.values().filter(|x| x.color() == color).count();
+    }
+
+    pub fn sum_chips(&self, color: Color) -> u8 {
+        return self
+            .chips
+            .values()
+            .filter(|x| x.color() == color)
+            .map(|x| x.value())
+            .sum();
+    }
 }
 
-pub fn run<T>(
+pub fn fill_potion<T>(
+    potion: &mut Potion,
     bag: &mut Bag,
     flask: &mut Flask,
     rng: &mut rand::rngs::ThreadRng,
     player: &impl Player,
+    initial_pos: u8,
 ) -> Potion {
-    let mut potion: Potion = Potion::new();
-
     loop {
         let chip = bag.draw(rng);
 
