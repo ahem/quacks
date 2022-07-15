@@ -1,4 +1,4 @@
 (executable
  (public_name quacks)
  (name main)
- (libraries quacks))
+ (libraries base stdio quacks))

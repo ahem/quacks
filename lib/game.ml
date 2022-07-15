@@ -39,13 +39,16 @@ type player = {
   decide_blue : state -> Cauldron.t -> Chip.t list -> int;
   (* after the pot have exploded, player must select purchase or move *)
   purchase_or_move : state -> Cauldron.t -> [ `Move | `Purchase ];
-  (* given a list of possible choices (lists with one or two elements), return an index in the list with the wanted chips *)
+  (* given a list of possible choices (lists with one or two elements) sorted by price, return an index in the list with the wanted chips *)
   buy_chips : state -> Chip.t list list -> int;
+  on_chip_added : Chip.t -> unit;
+  on_cauldron_full : Cauldron.t -> unit;
 }
 
 let rec add_chip : player -> state -> Cauldron.t -> Chip.t -> state * Cauldron.t
     =
  fun player state cauldron chip ->
+  player.on_chip_added chip;
   match fst chip with
   | Blue_crow_skull -> (
       let cauldron = Cauldron.add cauldron chip in
@@ -55,7 +58,7 @@ let rec add_chip : player -> state -> Cauldron.t -> Chip.t -> state * Cauldron.t
         List.pick_nth drawn (player.decide_blue state cauldron drawn)
       in
       (* return the rest *)
-      let state = { state with bag = Bag.add_chips bag drawn } in
+      let state = { state with bag = Bag.shuffle @@ Bag.add_chips bag drawn } in
       (* if a chip was selected, add that *)
       match selected with
       | Some selected_chip -> add_chip player state cauldron selected_chip
@@ -97,9 +100,6 @@ let rec fill_cauldron : state -> player -> Cauldron.t -> state * Cauldron.t =
   let chip, bag = Bag.draw state.bag in
   let state, cauldron = add_chip player { state with bag } cauldron chip in
   let state = { state with bag } in
-
-  Out_channel.output_string Out_channel.stdout
-  @@ Printf.sprintf "  %s\n" (Chip.show chip);
 
   if Cauldron.is_exploded cauldron then (state, cauldron)
   else
@@ -155,12 +155,6 @@ let purchase_chips : state -> player -> int -> state =
         Int.compare b a)
   in
 
-  (* log *)
-  List.iter choices ~f:(fun chips ->
-      List.map chips ~f:(fun c -> Chip.show c)
-      |> String.concat ~sep:", " |> Printf.sprintf "  %s\n"
-      |> Out_channel.output_string Out_channel.stdout);
-
   (* ask player and perform purchase *)
   match List.nth choices (player.buy_chips state choices) with
   | None -> state
@@ -178,24 +172,22 @@ let spend_rubies : state -> player -> state =
 
 let do_round : state -> player -> Cauldron.t -> state =
  fun state player cauldron ->
-  let bag = state.bag in
-  let state, cauldron = fill_cauldron state player cauldron in
+  let state, cauldron =
+    fill_cauldron { state with bag = Bag.shuffle state.bag } player cauldron
+  in
 
   (* refill bag *)
-  let state = { state with bag } in
+  let state = { state with bag = Bag.add_chips state.bag cauldron.chips } in
 
   (* TODO: roll bonus die *)
   (* TODO: eval black *)
   (* eval green *)
   let state, cauldron = eval_green state player cauldron in
-  (* TODO: eval purple *)
-  let score_field = Cauldron.score cauldron in
 
-  Out_channel.output_string Out_channel.stdout
-    (Printf.sprintf "coins %d, points: %d%s%s\n" score_field.coins
-       score_field.victory_points
-       (if score_field.ruby then ", ruby" else "")
-       (if Cauldron.is_exploded cauldron then " EXPLODED" else ""));
+  (* TODO: eval purple *)
+  player.on_cauldron_full cauldron;
+
+  let score_field = Cauldron.score cauldron in
 
   (* award ruby *)
   let state =
