@@ -97,7 +97,10 @@ let last : t -> Chip.t option = fun cauldron -> List.hd cauldron.chips
 let next_last : t -> Chip.t option = fun cauldron -> List.nth cauldron.chips 1
 
 let score : t -> cauldron_field =
- fun cauldron -> List.nth playing_field cauldron.value |> Option.value_exn
+ fun cauldron ->
+  match List.nth playing_field cauldron.value with
+  | Some f -> f
+  | None -> List.last_exn playing_field
 
 let change_to_explode : t -> Bag.t -> float =
  fun cauldron bag ->
@@ -108,3 +111,6 @@ let change_to_explode : t -> Bag.t -> float =
         Chip.is_same_kind ~kind:White_snowberries chip && snd chip > limit)
   in
   Float.of_int danger_chip_count /. Float.of_int total_chip_count
+
+let is_full : t -> bool =
+ fun cauldron -> cauldron.value >= List.length playing_field

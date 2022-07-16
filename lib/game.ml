@@ -88,8 +88,8 @@ let rec add_chip : player -> state -> Cauldron.t -> Chip.t -> state * Cauldron.t
 let eval_green : state -> player -> Cauldron.t -> state * Cauldron.t =
  fun state _player cauldron ->
   let is_green = function
-    | None -> false
     | Some c -> Chip.is_same_kind ~kind:Green_garden_spider c
+    | None -> false
   in
   if is_green (Cauldron.last cauldron) || is_green (Cauldron.next_last cauldron)
   then ({ state with rubies = state.rubies + 1 }, cauldron)
@@ -101,7 +101,8 @@ let rec fill_cauldron : state -> player -> Cauldron.t -> state * Cauldron.t =
   let state, cauldron = add_chip player { state with bag } cauldron chip in
   let state = { state with bag } in
 
-  if Cauldron.is_exploded cauldron then (state, cauldron)
+  if Cauldron.is_exploded cauldron || Cauldron.is_full cauldron then
+    (state, cauldron)
   else
     let state, cauldron =
       match Cauldron.last cauldron with

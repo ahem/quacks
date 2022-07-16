@@ -19,13 +19,17 @@ let init : unit -> Chip.t list =
 
 let draw : t -> Chip.t * t =
  fun bag ->
-  let n = Random.int (List.length bag) in
-  let bag, picked = List.pick_nth bag n in
-  (Option.value_exn ~message:"attempt to draw from empty bag" picked, bag)
+  let len = List.length bag in
+  if len > 0 then
+    let n = Random.int len in
+    let bag, picked = List.pick_nth bag n in
+    (Option.value_exn ~message:"attempt to draw from empty bag" picked, bag)
+  else failwith "attempt to draw from empty bag"
 
 let draw_n : t -> int -> Chip.t list * t =
  fun bag n ->
-  List.fold ~init:(bag, []) (List.range 0 n) ~f:(fun (bag, lst) _ ->
+  let n = Int.min n (List.length bag) in
+  List.fold ~init:([], bag) (List.range 0 n) ~f:(fun (lst, bag) _ ->
       let c, bag = draw bag in
       (c :: lst, bag))
 
