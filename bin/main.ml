@@ -7,9 +7,21 @@ let is_white = Chip.is_same_kind ~kind:White_snowberries
 module Strategies = struct
   let prefer_to_buy : Chip.ingredient -> Game.state -> Chip.t list list -> int =
    fun kind _ lst ->
-    List.findi lst ~f:(fun _ lst ->
-        List.exists lst ~f:(Chip.is_same_kind ~kind))
-    |> Option.value_map ~default:(Random.int (List.length lst)) ~f:fst
+    (*
+    List.iteri lst ~f:(fun i lst ->
+        let s = String.concat ~sep:", " @@ List.map lst ~f:Chip.show in
+        printf "      %d: %s\n" i s);
+        *)
+    let rec f = function
+      | n :: rest -> (
+          let choice =
+            List.findi lst ~f:(fun _ lst ->
+                List.exists lst ~f:(Poly.equal (kind, n)))
+          in
+          match choice with Some (idx, _) -> idx | _ -> f rest)
+      | [] -> Random.int (List.length lst)
+    in
+    f [ 4; 2; 1 ]
 
   let decide_blue_prefer :
       Chip.ingredient -> Game.state -> Cauldron.t -> Chip.t list -> int =
@@ -47,7 +59,7 @@ let () =
       decide_blue = Strategies.decide_blue_prefer Chip.Blue_crow_skull;
       purchase_or_move = (fun _ _ -> `Purchase);
       spend_flask = (fun _ _ -> false);
-      buy_chips = Strategies.prefer_to_buy Chip.Blue_crow_skull;
+      buy_chips = Strategies.prefer_to_buy Chip.Green_garden_spider;
       on_chip_added = (fun c -> printf "  %s\n" (Chip.show c));
       (* on_chip_added = ignore; *)
       on_cauldron_full =
