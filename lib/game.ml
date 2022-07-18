@@ -54,8 +54,8 @@ let rec add_chip : player -> state -> Cauldron.t -> Chip.t -> state * Cauldron.t
       let cauldron = Cauldron.add cauldron chip in
       (* draw some chips, player may select 1 *)
       let drawn, bag = Bag.draw_n state.bag (snd chip) in
-      let drawn, selected =
-        List.pick_nth drawn (player.decide_blue state cauldron drawn)
+      let selected, drawn =
+        List.remove_nth drawn (player.decide_blue state cauldron drawn)
       in
       (* return the rest *)
       let state = { state with bag = Bag.shuffle @@ Bag.add_chips bag drawn } in
@@ -98,6 +98,9 @@ let eval_green : state -> player -> Cauldron.t -> state * Cauldron.t =
 let rec fill_cauldron : state -> player -> Cauldron.t -> state * Cauldron.t =
  fun state player cauldron ->
   let chip, bag = Bag.draw state.bag in
+
+  (* FIXME: rmeove exception *)
+  let chip = Option.value_exn chip in
   let state, cauldron = add_chip player { state with bag } cauldron chip in
   let state = { state with bag } in
 

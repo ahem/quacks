@@ -104,12 +104,9 @@ let score : t -> cauldron_field =
 
 let change_to_explode : t -> Bag.t -> float =
  fun cauldron bag ->
-  let limit = cauldron.explosion_limit - total cauldron White_snowberries in
-  let total_chip_count = List.length bag in
-  let danger_chip_count =
-    List.count bag ~f:(fun chip ->
-        Chip.is_same_kind ~kind:White_snowberries chip && snd chip > limit)
-  in
+  let limit = cauldron.explosion_limit - total cauldron White_snowberries + 1 in
+  let total_chip_count = Bag.count bag in
+  let danger_chip_count = Bag.count ~kind:White_snowberries ~min:limit bag in
   Float.of_int danger_chip_count /. Float.of_int total_chip_count
 
 let is_full : t -> bool =

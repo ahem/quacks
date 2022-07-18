@@ -3,8 +3,8 @@ open List_extension
 
 type t = Chip.t list
 
-let init : unit -> Chip.t list =
- fun () ->
+let init () =
+  let open Chip in
   [
     (White_snowberries, 1);
     (White_snowberries, 1);
@@ -17,29 +17,32 @@ let init : unit -> Chip.t list =
     (Green_garden_spider, 1);
   ]
 
-let draw : t -> Chip.t * t =
- fun bag ->
+let add bag chip = chip :: bag
+let add_chips = List.append
+let shuffle = List.permute ?random_state:None
+
+let draw bag =
   let len = List.length bag in
-  if len > 0 then
-    let n = Random.int len in
-    let bag, picked = List.pick_nth bag n in
-    (Option.value_exn ~message:"attempt to draw from empty bag" picked, bag)
-  else failwith "attempt to draw from empty bag"
+  if len > 0 then List.remove_nth bag (Random.int len) else (None, [])
 
 let draw_n : t -> int -> Chip.t list * t =
  fun bag n ->
-  let n = Int.min n (List.length bag) in
-  List.fold ~init:([], bag) (List.range 0 n) ~f:(fun (lst, bag) _ ->
-      let c, bag = draw bag in
-      (c :: lst, bag))
+  if n > 0 then
+    List.fold ~init:([], bag) (List.range 0 n) ~f:(fun (lst, bag) _ ->
+        match draw bag with
+        | Some c, bag -> (c :: lst, bag)
+        | None, bag -> (lst, bag))
+  else ([], bag)
 
-let add : t -> Chip.t -> t = fun bag chip -> chip :: bag
-let add_chips : t -> Chip.t list -> t = List.append
-
-let rec shuffle : t -> t =
- fun bag ->
-  let cnt = List.length bag in
-  if cnt < 1 then []
-  else
-    let rest, picked = List.pick_nth bag (Random.int cnt) in
-    match picked with Some c -> c :: shuffle rest | None -> []
+let count ?kind ?min bag =
+  let lst =
+    match kind with
+    | Some kind -> List.filter bag ~f:(Chip.is_same_kind ~kind)
+    | None -> bag
+  in
+  let lst =
+    match min with
+    | Some min -> List.filter lst ~f:(fun (_, n) -> min >= n)
+    | None -> lst
+  in
+  List.length lst
