@@ -1,33 +1,30 @@
-mod bag;
+mod cauldron;
 mod chip;
-mod potion_phase;
+mod game;
+mod player;
 
+use cauldron::Cauldron;
 use chip::Chip;
-use rand::thread_rng;
-use rand::Rng;
+use game::{Game, Strategy};
+use player::Player;
 
-fn draw(bag: &mut Vec<Chip>, rng: &mut rand::rngs::ThreadRng) -> Chip {
-    let idx = rng.gen_range(0..bag.len());
-    return bag.remove(idx);
+struct SimpleStrategy {}
+
+impl Strategy for SimpleStrategy {
+    fn continue_drawing(&self, _player: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
+        cauldron.chance_to_explode(bag) < 0.5
+    }
 }
 
-fn main() {
-    let mut rng = thread_rng();
-    let mut bag = vec![
-        Chip::White1,
-        Chip::White1,
-        Chip::White1,
-        Chip::White1,
-        Chip::White2,
-        Chip::White2,
-        Chip::White3,
-        Chip::Orange1,
-        Chip::Green1,
-    ];
-    let chip = draw(&mut bag, &mut rng);
-    println!("Drawn chip: {:?}", chip);
-    let chip = draw(&mut bag, &mut rng);
-    println!("Drawn chip: {:?}", chip);
-    let chip = draw(&mut bag, &mut rng);
-    println!("Drawn chip: {:?}", chip);
+pub fn main() {
+    let mut player = Player::new();
+
+    println!("{player:?}");
+
+    let strategy = SimpleStrategy {};
+    let game = Game::new();
+    let cauldron = game.round(&mut player, &strategy);
+    let score = cauldron.score();
+
+    println!("{:?} is_exploded: {:?}", score, cauldron.is_exploded());
 }
