@@ -1,16 +1,30 @@
-use crate::chip::Chip;
+use std::fmt::Debug;
 
-#[derive(Debug)]
+use crate::{chip::Chip, game::Strategy};
+
 pub struct Player {
     score: u16,
     chips: Vec<Chip>,
     flask: bool,
     drop: u8,
+    strategy: Box<dyn Strategy>,
+}
+
+impl Debug for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Player")
+            .field("chips", &self.chips)
+            .field("flash", &self.flask)
+            .field("drop", &self.drop)
+            .field("strategy", &self.strategy.name())
+            .finish()
+    }
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(strategy: Box<dyn Strategy>) -> Self {
         Self {
+            strategy,
             score: 0,
             flask: true,
             drop: 0,
@@ -32,7 +46,15 @@ impl Player {
         &self.chips
     }
 
+    pub fn flask(&self) -> bool {
+        self.flask
+    }
+
     pub fn drop_position(&self) -> u8 {
         self.drop
+    }
+
+    pub fn strategy(&self) -> &dyn Strategy {
+        self.strategy.as_ref()
     }
 }

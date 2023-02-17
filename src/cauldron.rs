@@ -38,6 +38,10 @@ impl Cauldron {
         self.position += chip.value();
     }
 
+    pub fn last_chip(&self) -> Option<Chip> {
+        self.chips.last().cloned()
+    }
+
     pub fn total_value_of(&self, color: Color) -> u8 {
         self.chips.iter().fold(0, |acc, c| {
             if c.color() == color {
