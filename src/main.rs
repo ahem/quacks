@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use rand::Rng;
+
 mod cauldron;
 mod chip;
 mod game;
@@ -15,19 +19,26 @@ impl Strategy for SimpleStrategy {
         String::from("SimpleStrategy")
     }
 
-    fn continue_drawing(&self, _player: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
+    fn continue_drawing(&self, _: &Game, _: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
         cauldron.chance_to_explode(bag) < 0.5
+    }
+
+    fn spend_flask(&self, game: &Game, _: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
+        if cauldron.chance_to_explode(bag) > 0.0 {
+            // spend falsk sometimes, but only when about to explode
+            game.rng().gen_bool(0.5)
+        } else {
+            false
+        }
+    }
+
+    fn buy_instead_of_points(&self, game: &Game, _: &Player, _: &Cauldron) -> bool {
+        game.rng().gen_bool(0.5)
     }
 }
 
 pub fn main() {
-    let mut player = Player::new(Box::new(SimpleStrategy {}));
-
-    println!("{player:?}");
-
-    let game = Game::new();
-    let cauldron = game.round(&mut player);
-    let score = cauldron.score();
-
-    println!("{:?} is_exploded: {:?}", score, cauldron.is_exploded());
+    let players = vec![Player::new(Rc::new(SimpleStrategy {}))];
+    let mut game = Game::new(players);
+    game.round();
 }

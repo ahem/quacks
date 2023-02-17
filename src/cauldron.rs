@@ -1,10 +1,10 @@
 use crate::chip::{Chip, Color};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Score {
-    value: u8,
-    points: u8,
-    ruby: bool,
+    pub coins: u8,
+    pub points: u8,
+    pub ruby: bool,
 }
 
 #[derive(Debug)]
@@ -15,9 +15,9 @@ pub struct Cauldron {
 }
 
 impl Cauldron {
-    pub fn new(start_position: u8) -> Self {
+    pub fn new(drop_position: u8, rat_position: u8) -> Self {
         Self {
-            position: start_position,
+            position: drop_position + rat_position,
             limit: 7,
             chips: vec![],
         }
@@ -40,6 +40,15 @@ impl Cauldron {
 
     pub fn last_chip(&self) -> Option<Chip> {
         self.chips.last().cloned()
+    }
+
+    pub fn remove_last(&mut self) -> Option<Chip> {
+        if let Some(chip) = self.chips.pop() {
+            self.position -= chip.value();
+            Some(chip)
+        } else {
+            None
+        }
     }
 
     pub fn total_value_of(&self, color: Color) -> u8 {
@@ -76,56 +85,56 @@ impl Cauldron {
 
 #[rustfmt::skip]
 const CAULDRON_FIELDS: [Score; 52] = [
-    Score { value: 0, points: 0, ruby: false },
-    Score { value: 1, points: 0, ruby: false },
-    Score { value: 2, points: 0, ruby: false },
-    Score { value: 3, points: 0, ruby: false },
-    Score { value: 4, points: 0, ruby: false },
-    Score { value: 5, points: 0, ruby: true },
-    Score { value: 6, points: 1, ruby: false },
-    Score { value: 7, points: 1, ruby: false },
-    Score { value: 8, points: 1, ruby: false },
-    Score { value: 9, points: 1, ruby: true },
-    Score { value: 10, points: 2, ruby: false },
-    Score { value: 11, points: 2, ruby: false },
-    Score { value: 12, points: 2, ruby: false },
-    Score { value: 13, points: 2, ruby: true },
-    Score { value: 14, points: 3, ruby: false },
-    Score { value: 15, points: 3, ruby: false },
-    Score { value: 16, points: 3, ruby: false },
-    Score { value: 16, points: 4, ruby: false },
-    Score { value: 17, points: 4, ruby: false },
-    Score { value: 17, points: 4, ruby: true },
-    Score { value: 18, points: 4, ruby: false },
-    Score { value: 18, points: 5, ruby: false },
-    Score { value: 19, points: 5, ruby: false },
-    Score { value: 19, points: 5, ruby: true },
-    Score { value: 20, points: 5, ruby: false },
-    Score { value: 20, points: 6, ruby: false },
-    Score { value: 21, points: 6, ruby: false },
-    Score { value: 21, points: 6, ruby: true },
-    Score { value: 22, points: 7, ruby: false },
-    Score { value: 22, points: 7, ruby: true },
-    Score { value: 23, points: 7, ruby: false },
-    Score { value: 23, points: 8, ruby: false },
-    Score { value: 24, points: 8, ruby: false },
-    Score { value: 24, points: 8, ruby: true },
-    Score { value: 25, points: 9, ruby: false },
-    Score { value: 25, points: 9, ruby: true },
-    Score { value: 26, points: 9, ruby: false },
-    Score { value: 26, points: 10, ruby: false },
-    Score { value: 27, points: 10, ruby: false },
-    Score { value: 27, points: 10, ruby: true },
-    Score { value: 28, points: 11, ruby: false },
-    Score { value: 29, points: 11, ruby: false },
-    Score { value: 29, points: 12, ruby: false },
-    Score { value: 30, points: 12, ruby: false },
-    Score { value: 30, points: 12, ruby: true },
-    Score { value: 31, points: 12, ruby: false },
-    Score { value: 31, points: 13, ruby: false },
-    Score { value: 32, points: 13, ruby: false },
-    Score { value: 32, points: 13, ruby: true },
-    Score { value: 33, points: 14, ruby: false },
-    Score { value: 33, points: 14, ruby: true },
-    Score { value: 35, points: 15, ruby: false },
+    Score { coins: 0, points: 0, ruby: false },
+    Score { coins: 1, points: 0, ruby: false },
+    Score { coins: 2, points: 0, ruby: false },
+    Score { coins: 3, points: 0, ruby: false },
+    Score { coins: 4, points: 0, ruby: false },
+    Score { coins: 5, points: 0, ruby: true },
+    Score { coins: 6, points: 1, ruby: false },
+    Score { coins: 7, points: 1, ruby: false },
+    Score { coins: 8, points: 1, ruby: false },
+    Score { coins: 9, points: 1, ruby: true },
+    Score { coins: 10, points: 2, ruby: false },
+    Score { coins: 11, points: 2, ruby: false },
+    Score { coins: 12, points: 2, ruby: false },
+    Score { coins: 13, points: 2, ruby: true },
+    Score { coins: 14, points: 3, ruby: false },
+    Score { coins: 15, points: 3, ruby: false },
+    Score { coins: 16, points: 3, ruby: false },
+    Score { coins: 16, points: 4, ruby: false },
+    Score { coins: 17, points: 4, ruby: false },
+    Score { coins: 17, points: 4, ruby: true },
+    Score { coins: 18, points: 4, ruby: false },
+    Score { coins: 18, points: 5, ruby: false },
+    Score { coins: 19, points: 5, ruby: false },
+    Score { coins: 19, points: 5, ruby: true },
+    Score { coins: 20, points: 5, ruby: false },
+    Score { coins: 20, points: 6, ruby: false },
+    Score { coins: 21, points: 6, ruby: false },
+    Score { coins: 21, points: 6, ruby: true },
+    Score { coins: 22, points: 7, ruby: false },
+    Score { coins: 22, points: 7, ruby: true },
+    Score { coins: 23, points: 7, ruby: false },
+    Score { coins: 23, points: 8, ruby: false },
+    Score { coins: 24, points: 8, ruby: false },
+    Score { coins: 24, points: 8, ruby: true },
+    Score { coins: 25, points: 9, ruby: false },
+    Score { coins: 25, points: 9, ruby: true },
+    Score { coins: 26, points: 9, ruby: false },
+    Score { coins: 26, points: 10, ruby: false },
+    Score { coins: 27, points: 10, ruby: false },
+    Score { coins: 27, points: 10, ruby: true },
+    Score { coins: 28, points: 11, ruby: false },
+    Score { coins: 29, points: 11, ruby: false },
+    Score { coins: 29, points: 12, ruby: false },
+    Score { coins: 30, points: 12, ruby: false },
+    Score { coins: 30, points: 12, ruby: true },
+    Score { coins: 31, points: 12, ruby: false },
+    Score { coins: 31, points: 13, ruby: false },
+    Score { coins: 32, points: 13, ruby: false },
+    Score { coins: 32, points: 13, ruby: true },
+    Score { coins: 33, points: 14, ruby: false },
+    Score { coins: 33, points: 14, ruby: true },
+    Score { coins: 35, points: 15, ruby: false },
 ];
