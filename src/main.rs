@@ -19,12 +19,12 @@ impl Strategy for SimpleStrategy {
         String::from("SimpleStrategy")
     }
 
-    fn continue_drawing(&self, _: &Game, _: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
-        cauldron.chance_to_explode(bag) < 0.5
+    fn continue_drawing(&self, _: &Game, player: &Player) -> bool {
+        player.cauldron().chance_to_explode(player.bag()) < 0.5
     }
 
-    fn spend_flask(&self, game: &Game, _: &Player, bag: &Vec<Chip>, cauldron: &Cauldron) -> bool {
-        if cauldron.chance_to_explode(bag) > 0.0 {
+    fn spend_flask(&self, game: &Game, player: &Player) -> bool {
+        if player.cauldron().chance_to_explode(player.bag()) > 0.0 {
             // spend falsk sometimes, but only when about to explode
             game.rng().gen_bool(0.5)
         } else {
@@ -32,7 +32,7 @@ impl Strategy for SimpleStrategy {
         }
     }
 
-    fn buy_instead_of_points(&self, game: &Game, _: &Player, _: &Cauldron) -> bool {
+    fn buy_instead_of_points(&self, game: &Game, _player: &Player) -> bool {
         game.rng().gen_bool(0.5)
     }
 }

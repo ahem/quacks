@@ -1,21 +1,22 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use crate::{chip::Chip, game::Strategy};
+use crate::{cauldron::Cauldron, chip::Chip, game::Strategy};
 
 pub struct Player {
     score: u16,
     rubies: u8,
-    chips: Vec<Chip>,
     flask: bool,
     drop: u8,
+    bag: Vec<Chip>,
+    cauldron: Cauldron,
     strategy: Rc<dyn Strategy>,
 }
 
 impl Debug for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Player")
-            .field("chips", &self.chips)
+            .field("bag", &self.bag)
             .field("flash", &self.flask)
             .field("drop", &self.drop)
             .field("strategy", &self.strategy.name())
@@ -31,7 +32,8 @@ impl Player {
             rubies: 0,
             flask: true,
             drop: 0,
-            chips: vec![
+            cauldron: Cauldron::new(),
+            bag: vec![
                 Chip::White1,
                 Chip::White1,
                 Chip::White1,
@@ -45,8 +47,20 @@ impl Player {
         }
     }
 
+    pub fn cauldron(&self) -> &Cauldron {
+        return &self.cauldron;
+    }
+
+    pub fn cauldron_mut(&mut self) -> &mut Cauldron {
+        return &mut self.cauldron;
+    }
+
     pub fn bag(&self) -> &Vec<Chip> {
-        &self.chips
+        &self.bag
+    }
+
+    pub fn bag_mut(&mut self) -> &mut Vec<Chip> {
+        &mut self.bag
     }
 
     pub fn flask(&self) -> bool {

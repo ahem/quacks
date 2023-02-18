@@ -15,9 +15,9 @@ pub struct Cauldron {
 }
 
 impl Cauldron {
-    pub fn new(drop_position: u8, rat_position: u8) -> Self {
+    pub fn new() -> Self {
         Self {
-            position: drop_position + rat_position,
+            position: 0,
             limit: 7,
             chips: vec![],
         }
