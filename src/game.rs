@@ -1,177 +1,210 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
-use rand::{rngs::SmallRng, Rng, SeedableRng};
-
-use crate::chip::{Chip, Color};
+use crate::bonus_die::{BonusDie, BonusDieResult};
+use crate::chip::Chip;
 use crate::player::Player;
+use crate::rules::RuleSet;
 
 pub trait Rule {
-    fn chip_drawn(&self, player: &mut Player);
-    fn cauldron_finished(&self, player: &mut Player);
-    fn black_chip(&self, player: &mut Player);
-    fn green_chip(&self, player: &mut Player);
-    fn purple_chip(&self, player: &mut Player);
-}
-
-pub trait Strategy {
-    fn name(&self) -> String;
-    fn continue_drawing(&self, game: &Game, player: &Player) -> bool;
-
-    fn spend_flask(&self, game: &Game, player: &Player) -> bool;
-
-    fn buy_instead_of_points(&self, game: &Game, player: &Player) -> bool;
+    fn chip_drawn(&self, player: Rc<RefCell<Player>>);
+    fn cauldron_finished(&self, player: Rc<RefCell<Player>>);
+    fn black_chip(&self, player: Rc<RefCell<Player>>, game: &Game);
+    fn green_chip(&self, player: Rc<RefCell<Player>>);
+    fn purple_chip(&self, player: Rc<RefCell<Player>>);
 }
 
 pub struct Game {
-    rng: RefCell<SmallRng>,
     players: Vec<Rc<RefCell<Player>>>,
-    rules: Vec<Box<dyn Rule>>,
+    rules: RuleSet,
+    bonus_die: BonusDie,
 }
 
 impl Game {
-    pub fn new(players: Vec<Player>) -> Self {
+    pub fn new(players: Vec<Player>, rules: RuleSet, bonus_die: BonusDie) -> Self {
         let players = players
             .into_iter()
             .map(|p| Rc::new(RefCell::new(p)))
             .collect();
-        let rng = std::cell::RefCell::new(SmallRng::from_entropy());
         Self {
-            rng,
             players,
-            rules: vec![],
+            rules,
+            bonus_die,
         }
     }
 
-    pub fn draw(&self, bag: &mut Vec<Chip>) -> Chip {
-        let mut rng = self.rng.borrow_mut();
-        bag.remove(rng.gen_range(0..bag.len()))
+    pub fn players(&self) -> Vec<Ref<Player>> {
+        self.players.iter().map(|p| p.borrow()).collect()
     }
 
-    fn calculate_rat(&self, _player_idx: &Player) -> u8 {
+    pub fn player_position(&self, player: &Rc<RefCell<Player>>) -> usize {
+        self.players
+            .iter()
+            .position(|p| Rc::ptr_eq(p, player))
+            .expect("player doesn't exist in game")
+    }
+
+    fn calculate_rat_tails(&self, _player: &Player) -> u8 {
         0 // TODO
     }
+}
 
-    fn fill_cauldron_phase(&mut self, player: &mut Player) {
-        let strategy = player.strategy();
+fn fill_cauldron_phase(game: &Game) {
+    let mut active_players = game.players.clone();
 
-        let drop_position = player.drop_position();
-        let rat_position = self.calculate_rat(&player);
+    while !active_players.is_empty() {
+        for player in &active_players {
+            // draw chip
+            let chip = player.borrow_mut().draw();
+            player.borrow_mut().add_chip_to_cauldron(chip);
+            game.rules.apply_chip_drawn_rules(player.clone());
 
-        loop {
-            let chip = self.draw(player.bag_mut());
-            player.cauldron_mut().add_chip(chip);
-
-            self.apply_chip_drawn_rules(player);
-
-            if player.cauldron().is_exploded() {
-                println!("  exploded");
-                break;
+            if player.borrow().cauldron().is_exploded() {
+                continue;
             }
 
-            if player.flask()
-                && player.cauldron().last_chip().map(|c| c.color()) == Some(Color::White)
-            {
-                if strategy.spend_flask(self, player) {
-                    let chip = player.cauldron_mut().remove_last().unwrap();
-                    player.bag_mut().push(chip);
-                    player.spend_flask();
-                    println!("  spend flask!");
+            if player.borrow().can_use_flask() && player.borrow().wants_to_use_flask(game) {
+                let mut player = player.borrow_mut();
+                let chip = player.cauldron_mut().remove_last().unwrap();
+                player.bag_mut().push(chip);
+                player.use_flask();
+            }
+        }
+
+        active_players = active_players
+            .iter()
+            .cloned()
+            .filter(|player| {
+                !player.borrow().cauldron().is_exploded()
+                    && !player.borrow().cauldron().is_full()
+                    && player.borrow().wants_to_continue_drawing(game)
+            })
+            .collect();
+    }
+
+    for player in game.players.iter().cloned() {
+        game.rules.apply_cauldron_finished_rules(&player);
+        let player = player.borrow();
+        let cauldron = player.cauldron();
+        let score = cauldron.score();
+        if cauldron.is_exploded() {
+            println!("{player} exploded!!!");
+        }
+        println!("{player} finished drawing: {cauldron:#?}");
+        println!("{player} {score:?}");
+    }
+}
+
+fn bonus_die_phase(game: &Game) {
+    let players: Vec<_> = game
+        .players
+        .iter()
+        .filter(|p| !p.borrow().cauldron().is_exploded())
+        .collect();
+
+    let max_score =
+        if let Some(max_score) = players.iter().map(|p| p.borrow().cauldron().score()).max() {
+            max_score
+        } else {
+            return;
+        };
+
+    let players = players
+        .iter()
+        .filter(|p| p.borrow().cauldron().score() == max_score);
+
+    for player in players {
+        println!("{player} rolls bonus die", player = player.borrow());
+        let roll = game.bonus_die.roll();
+        match roll {
+            BonusDieResult::OrangeChip => {
+                player.borrow_mut().bag_mut().push(Chip::Orange1);
+            }
+            BonusDieResult::VictoryPoint(points) => {
+                player.borrow_mut().add_victory_points(points);
+            }
+            BonusDieResult::Ruby => {
+                player.borrow_mut().add_rubies(1);
+            }
+            BonusDieResult::Drop => {
+                player.borrow_mut().move_drop();
+            }
+        }
+        game.rules.apply_bonus_die_rolled_rules(player, roll);
+    }
+}
+
+fn buy_chips_phase(game: &Game, player: &Rc<RefCell<Player>>, coins: u8) {
+    for player in game.players.iter() {
+        let coins = player.borrow().cauldron().score().coins;
+        let options = game.rules.purchase_options(coins);
+        let choice = player.borrow().choose_chips_to_add_to_bag(game, &options);
+        if let Some(idx) = choice {
+            if let Some(chips) = options.get(idx) {
+                for chip in chips {
+                    player.borrow_mut().add_chip_to_bag(*chip);
+                    println!("{player} bought {chip}", player = player.borrow());
                 }
             }
-
-            if !strategy.continue_drawing(self, player) {
-                println!("  stopped drawing");
-                break;
-            }
         }
     }
+}
 
-    pub fn buy_chips_phase(&self, player: &mut Player, coins: u8) {
-        // TODO!
+fn spend_rubies_phase(game: &Game, player: &Rc<RefCell<Player>>) {
+    // TODO!
+}
+
+fn round(game: &mut Game) {
+    // TODO: draw card
+
+    fill_cauldron_phase(game);
+
+    bonus_die_phase(game);
+
+    for player in game.players.iter() {
+        game.rules.apply_black_chip_rules(&player, game);
+        game.rules.apply_green_chip_rules(&player);
+        game.rules.apply_purple_chip_rules(&player);
     }
 
-    pub fn spend_rubies_phase(&self, player: &mut Player) {
-        // TODO!
-    }
-
-    pub fn round(&mut self) {
-        let mut cauldrons = vec![];
-        for i in 0..self.players.len() {
-            let player = self.players[i].clone();
-            let cauldron = self.fill_cauldron_phase(&mut player.borrow_mut());
-            cauldrons.push((player, cauldron));
+    for player in game.players.iter() {
+        let score = player.borrow().cauldron().score();
+        if score.ruby {
+            player.borrow_mut().add_rubies(1);
         }
-
-        for (player, cauldron) in &mut cauldrons {
-            self.apply_cauldron_finished_rules(&mut player.borrow_mut());
-        }
-
-        println!("{cauldrons:?}");
-
-        // TODO: bonus die
-
-        for (player, cauldron) in &mut cauldrons {
-            self.apply_black_chip_rule(&mut player.borrow_mut());
-            self.apply_green_chip_rule(&mut player.borrow_mut());
-            self.apply_purple_chip_rule(&mut player.borrow_mut());
-        }
-
-        for (player, cauldron) in &cauldrons {
-            let mut player = player.borrow_mut();
-            let score = player.cauldron().score();
-            if score.ruby {
-                player.add_rubies(1);
-            }
-            if !player.cauldron().is_exploded() {
-                self.buy_chips_phase(&mut player, score.coins);
-                player.add_victory_points(score.points);
+        if !player.borrow().cauldron().is_exploded() {
+            buy_chips_phase(&game, player, score.coins);
+            player.borrow_mut().add_victory_points(score.points);
+        } else {
+            if player.borrow().wants_to_buy_instead_of_points(&game) {
+                buy_chips_phase(&game, player, score.coins);
             } else {
-                let strategy = player.strategy().clone();
-                if strategy.buy_instead_of_points(&self, &player) {
-                    self.buy_chips_phase(&mut player, score.coins);
-                } else {
-                    player.add_victory_points(score.points);
-                }
+                player.borrow_mut().add_victory_points(score.points);
             }
         }
-
-        for player in self.players.iter().cloned() {
-            self.spend_rubies_phase(&mut player.borrow_mut());
-        }
     }
 
-    pub fn rng(&self) -> RefMut<SmallRng> {
-        self.rng.borrow_mut()
+    for player in game.players.iter() {
+        spend_rubies_phase(&game, player);
     }
 
-    fn apply_chip_drawn_rules(&self, player: &mut Player) {
-        for rule in self.rules.iter() {
-            rule.chip_drawn(player)
-        }
+    for player in game.players.iter() {
+        player.borrow_mut().empty_cauldron();
+    }
+}
+
+pub fn run(game: &mut Game) {
+    for _ in 1..=9 {
+        // TODO: before turn two, add yellow purchase option
+        // TODO: before turn three, add purple purchase option
+        // TODO: before turn six, add extra white 1 chip to all bags
+        round(game);
     }
 
-    fn apply_cauldron_finished_rules(&self, player: &mut Player) {
-        for rule in self.rules.iter() {
-            rule.cauldron_finished(player)
-        }
-    }
+    // TODO: calculate final score
 
-    fn apply_black_chip_rule(&self, player: &mut Player) {
-        for rule in self.rules.iter() {
-            rule.black_chip(player)
-        }
-    }
-
-    fn apply_green_chip_rule(&self, player: &mut Player) {
-        for rule in self.rules.iter() {
-            rule.green_chip(player)
-        }
-    }
-
-    fn apply_purple_chip_rule(&self, player: &mut Player) {
-        for rule in self.rules.iter() {
-            rule.purple_chip(player)
-        }
+    for player in game.players.iter() {
+        let player = player.borrow();
+        println!("{player:#?}");
     }
 }

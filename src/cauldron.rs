@@ -1,6 +1,6 @@
 use crate::chip::{Chip, Color};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Score {
     pub coins: u8,
     pub points: u8,
@@ -27,6 +27,10 @@ impl Cauldron {
         usize::from(self.position) >= CAULDRON_FIELDS.len() - 1
     }
 
+    pub fn increase_position(&mut self, n: u8) {
+        self.position += n
+    }
+
     pub fn add_chip(&mut self, chip: Chip) {
         if self.is_full() {
             panic!("cannot put chips in full cauldron");
@@ -42,6 +46,10 @@ impl Cauldron {
         self.chips.last().cloned()
     }
 
+    pub fn chips(&self) -> &Vec<Chip> {
+        &self.chips
+    }
+
     pub fn remove_last(&mut self) -> Option<Chip> {
         if let Some(chip) = self.chips.pop() {
             self.position -= chip.value();
@@ -49,6 +57,19 @@ impl Cauldron {
         } else {
             None
         }
+    }
+
+    pub fn remove_all(&mut self) -> Vec<Chip> {
+        let chips = self.chips.clone();
+        self.chips.clear();
+        self.position = 0;
+        chips
+    }
+
+    pub fn number_of(&self, color: Color) -> u8 {
+        self.chips
+            .iter()
+            .fold(0, |acc, c| if c.color() == color { acc + 1 } else { acc })
     }
 
     pub fn total_value_of(&self, color: Color) -> u8 {

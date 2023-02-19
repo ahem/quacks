@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use std::fmt::Display;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Color {
     White,
     Orange,
@@ -10,7 +12,7 @@ pub enum Color {
     Black,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Chip {
     White1,
     White2,
@@ -60,5 +62,15 @@ impl Chip {
             Chip::Purple1 => Color::Purple,
             Chip::Black1 => Color::Black,
         };
+    }
+}
+
+impl Display for Chip {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{color:?} {value}",
+            color = self.color(),
+            value = self.value()
+        ))
     }
 }
