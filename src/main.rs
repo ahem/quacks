@@ -12,7 +12,7 @@ mod player;
 mod rules;
 mod strategy;
 
-use chip::Chip;
+use chip::{Chip, Color};
 use game::{run, Game};
 use player::Player;
 use rules::RuleSet;
@@ -35,7 +35,11 @@ impl Strategy for SimpleStrategy {
 
     fn continue_drawing(&self, _: &Game, player: &Player) -> bool {
         let change = player.cauldron().chance_to_explode(player.bag());
-        self.rng.borrow_mut().gen_bool((1.0 - change).into())
+        if change < 1.0 {
+            self.rng.borrow_mut().gen_bool((1.0 - change).into())
+        } else {
+            false
+        }
     }
 
     fn spend_flask(&self, _: &Game, player: &Player) -> bool {
@@ -54,11 +58,25 @@ impl Strategy for SimpleStrategy {
 
     fn choose_chips_to_add_to_bag(
         &self,
-        game: &Game,
-        player: &Player,
-        options: &Vec<Vec<Chip>>,
+        _game: &Game,
+        _player: &Player,
+        _options: &Vec<Vec<Chip>>,
     ) -> Option<usize> {
         Some(0)
+    }
+
+    fn choose_chips_to_add_to_cauldon(&self, _: &Player, chips: &Vec<Chip>) -> Option<usize> {
+        let choices: Vec<usize> = chips
+            .iter()
+            .enumerate()
+            .filter_map(|(n, c)| (c.color() != Color::White).then_some(n))
+            .collect();
+        if !choices.is_empty() {
+            let idx = self.rng.borrow_mut().gen_range(0..choices.len());
+            Some(choices[idx])
+        } else {
+            None
+        }
     }
 }
 
@@ -75,6 +93,8 @@ pub fn main() {
     let rules = RuleSet::new(vec![
         Rc::new(rules::core::Orange),
         Rc::new(rules::set1::Green),
+        Rc::new(rules::set1::Red),
+        Rc::new(rules::set1::Blue),
     ]);
 
     let mut game = Game::new(players, rules, bonus_die);

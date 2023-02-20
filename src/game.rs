@@ -44,6 +44,10 @@ impl Game {
             .expect("player doesn't exist in game")
     }
 
+    pub fn rules(&self) -> &RuleSet {
+        &self.rules
+    }
+
     fn calculate_rat_tails(&self, _player: &Player) -> u8 {
         0 // TODO
     }
@@ -57,7 +61,7 @@ fn fill_cauldron_phase(game: &Game) {
             // draw chip
             let chip = player.borrow_mut().draw();
             player.borrow_mut().add_chip_to_cauldron(chip);
-            game.rules.apply_chip_drawn_rules(player.clone());
+            game.rules.apply_chip_drawn_rules(player.clone(), game);
 
             if player.borrow().cauldron().is_exploded() {
                 continue;

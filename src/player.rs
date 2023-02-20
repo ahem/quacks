@@ -153,4 +153,8 @@ impl Player {
         self.strategy
             .choose_chips_to_add_to_bag(game, &self, options)
     }
+
+    pub fn choose_chips_to_add_to_cauldon(&self, chips: &Vec<Chip>) -> Option<usize> {
+        self.strategy.choose_chips_to_add_to_cauldon(&self, chips)
+    }
 }
