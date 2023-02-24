@@ -29,7 +29,7 @@ impl Rule for Green {
         player.borrow_mut().add_rubies(cnt as u8)
     }
 
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, _: &Game) -> Vec<(Chip, u8)> {
         vec![(Chip::Green1, 4), (Chip::Green2, 8), (Chip::Green4, 14)]
     }
 }
@@ -37,7 +37,7 @@ impl Rule for Green {
 pub struct Red;
 
 impl Rule for Red {
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, _: &Game) -> Vec<(Chip, u8)> {
         vec![(Chip::Red1, 6), (Chip::Red2, 10), (Chip::Red4, 16)]
     }
 
@@ -55,7 +55,7 @@ impl Rule for Red {
 pub struct Blue;
 
 impl Rule for Blue {
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, _: &Game) -> Vec<(Chip, u8)> {
         vec![(Chip::Blue1, 5), (Chip::Blue2, 10), (Chip::Blue4, 19)]
     }
 
@@ -82,6 +82,58 @@ impl Rule for Blue {
     }
 }
 
-struct Yellow;
+pub struct Yellow;
 
-impl Rule for Yellow {}
+impl Rule for Yellow {
+    fn purchase_options(&self, game: &Game) -> Vec<(Chip, u8)> {
+        if game.turn() < 2 {
+            return vec![];
+        }
+        vec![(Chip::Yellow1, 8), (Chip::Yellow2, 12), (Chip::Yellow4, 18)]
+    }
+
+    fn yellow_chip_drawn(&self, player: Rc<RefCell<Player>>, _game: &Game, _value: u8) {
+        let mut player = player.borrow_mut();
+        let cauldron = player.cauldron_mut();
+        let yellow_chip = cauldron.remove_last().unwrap();
+        if let Some(chip) = cauldron.remove_last() {
+            if chip.color() == Color::White {
+                cauldron.increase_position(chip.value());
+            } else {
+                cauldron.add_chip(chip);
+            }
+        }
+        cauldron.add_chip(yellow_chip);
+    }
+}
+
+pub struct Purple;
+
+impl Rule for Purple {
+    fn purchase_options(&self, game: &Game) -> Vec<(Chip, u8)> {
+        if game.turn() < 3 {
+            return vec![];
+        }
+        vec![(Chip::Purple1, 9)]
+    }
+
+    fn purple_chip(&self, player: Rc<RefCell<Player>>) {
+        let cnt = player
+            .borrow()
+            .cauldron()
+            .chips()
+            .iter()
+            .filter(|c| c.color() == Color::Purple)
+            .count();
+
+        if cnt == 1 {
+            player.borrow_mut().add_victory_points(1);
+        } else if cnt == 2 {
+            player.borrow_mut().add_victory_points(1);
+            player.borrow_mut().add_rubies(1);
+        } else if cnt > 2 {
+            player.borrow_mut().add_victory_points(2);
+            player.borrow_mut().move_drop();
+        }
+    }
+}

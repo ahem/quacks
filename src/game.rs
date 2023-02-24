@@ -18,6 +18,7 @@ pub struct Game {
     players: Vec<Rc<RefCell<Player>>>,
     rules: RuleSet,
     bonus_die: BonusDie,
+    turn: u8,
 }
 
 impl Game {
@@ -30,6 +31,7 @@ impl Game {
             players,
             rules,
             bonus_die,
+            turn: 1,
         }
     }
 
@@ -46,6 +48,10 @@ impl Game {
 
     pub fn rules(&self) -> &RuleSet {
         &self.rules
+    }
+
+    pub fn turn(&self) -> u8 {
+        self.turn
     }
 
     fn calculate_rat_tails(&self, _player: &Player) -> u8 {
@@ -139,26 +145,29 @@ fn bonus_die_phase(game: &Game) {
 }
 
 fn buy_chips_phase(game: &Game, player: &Rc<RefCell<Player>>, coins: u8) {
-    for player in game.players.iter() {
-        let coins = player.borrow().cauldron().score().coins;
-        let options = game.rules.purchase_options(coins);
-        let choice = player.borrow().choose_chips_to_add_to_bag(game, &options);
-        if let Some(idx) = choice {
-            if let Some(chips) = options.get(idx) {
-                for chip in chips {
-                    player.borrow_mut().add_chip_to_bag(*chip);
-                    println!("{player} bought {chip}", player = player.borrow());
-                }
+    let options = game.rules.purchase_options(game, coins);
+    let choice = player.borrow().choose_chips_to_add_to_bag(game, &options);
+    if let Some(idx) = choice {
+        if let Some(chips) = options.get(idx) {
+            for chip in chips {
+                player.borrow_mut().add_chip_to_bag(*chip);
+                println!("{player} bought {chip}", player = player.borrow());
             }
         }
     }
 }
 
 fn spend_rubies_phase(game: &Game, player: &Rc<RefCell<Player>>) {
-    // TODO!
+    // TODO
 }
 
 fn round(game: &mut Game) {
+    if game.turn == 6 {
+        for player in game.players.iter() {
+            player.borrow_mut().bag_mut().push(Chip::White1);
+        }
+    }
+
     // TODO: draw card
 
     fill_cauldron_phase(game);
@@ -177,9 +186,11 @@ fn round(game: &mut Game) {
             player.borrow_mut().add_rubies(1);
         }
         if !player.borrow().cauldron().is_exploded() {
+            // TODO: in round 9 coins become points
             buy_chips_phase(&game, player, score.coins);
             player.borrow_mut().add_victory_points(score.points);
         } else {
+            // TODO: in round 9 always choose score
             if player.borrow().wants_to_buy_instead_of_points(&game) {
                 buy_chips_phase(&game, player, score.coins);
             } else {
@@ -189,6 +200,7 @@ fn round(game: &mut Game) {
     }
 
     for player in game.players.iter() {
+        // TODO: in round 9 rubies bocomes points
         spend_rubies_phase(&game, player);
     }
 
@@ -198,10 +210,12 @@ fn round(game: &mut Game) {
 }
 
 pub fn run(game: &mut Game) {
-    for _ in 1..=9 {
-        // TODO: before turn two, add yellow purchase option
-        // TODO: before turn three, add purple purchase option
-        // TODO: before turn six, add extra white 1 chip to all bags
+    for turn in 1..=9 {
+        println!("start of round {turn}");
+        for player in game.players() {
+            println!("  {player} score: {score}", score = player.victory_points());
+        }
+        game.turn = turn;
         round(game);
     }
 

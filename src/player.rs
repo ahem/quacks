@@ -121,8 +121,16 @@ impl Player {
         self.drop
     }
 
+    pub fn rubies(&self) -> u8 {
+        self.rubies
+    }
+
     pub fn add_rubies(&mut self, cnt: u8) {
         self.rubies += cnt;
+    }
+
+    pub fn victory_points(&self) -> u16 {
+        self.score
     }
 
     pub fn add_victory_points(&mut self, points: u8) {

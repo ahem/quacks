@@ -10,15 +10,15 @@ use crate::{
 pub struct Orange;
 
 impl Rule for Orange {
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, _: &Game) -> Vec<(Chip, u8)> {
         vec![(Chip::Orange1, 3)]
     }
 }
 
-pub struct Black {}
+pub struct Black;
 
 impl Rule for Black {
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, _: &Game) -> Vec<(Chip, u8)> {
         vec![(Chip::Black1, 10)]
     }
 
@@ -28,8 +28,10 @@ impl Rule for Black {
         let number_of_players = game.players().len();
 
         if number_of_players == 2 {
-            let other_player = &game.players()[(idx + 1) % 2];
-            let other_count = other_player.cauldron().number_of(Color::Black);
+            let other_count = game.players()[(idx + 1) % 2]
+                .cauldron()
+                .number_of(Color::Black)
+                .to_owned();
             if own_count >= other_count {
                 player.borrow_mut().move_drop();
             }

@@ -18,7 +18,7 @@ pub trait Rule {
     fn black_chip(&self, player: Rc<RefCell<Player>>, game: &Game) {}
     fn green_chip(&self, player: Rc<RefCell<Player>>) {}
     fn purple_chip(&self, player: Rc<RefCell<Player>>) {}
-    fn purchase_options(&self) -> Vec<(Chip, u8)> {
+    fn purchase_options(&self, game: &Game) -> Vec<(Chip, u8)> {
         vec![]
     }
 }
@@ -88,11 +88,11 @@ impl RuleSet {
         }
     }
 
-    pub fn purchase_options(&self, coins: u8) -> Vec<Vec<Chip>> {
+    pub fn purchase_options(&self, game: &Game, coins: u8) -> Vec<Vec<Chip>> {
         let all_options: Vec<_> = self
             .rules
             .iter()
-            .flat_map(|x| x.purchase_options())
+            .flat_map(|x| x.purchase_options(game))
             .collect();
 
         let mut all_choices = vec![];

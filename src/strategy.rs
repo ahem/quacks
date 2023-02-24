@@ -2,6 +2,9 @@ use crate::chip::Chip;
 use crate::game::Game;
 use crate::player::Player;
 
+pub mod prefer_blue;
+pub mod simple;
+
 pub trait Strategy {
     fn name(&self) -> String;
     fn continue_drawing(&self, game: &Game, player: &Player) -> bool;
