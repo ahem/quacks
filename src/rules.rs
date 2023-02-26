@@ -23,6 +23,7 @@ pub trait Rule {
     }
 }
 
+#[derive(Clone)]
 pub struct RuleSet {
     rules: Vec<Rc<dyn Rule>>,
 }
@@ -32,6 +33,7 @@ impl RuleSet {
         Self { rules }
     }
 
+    /*
     pub fn add_rule(&mut self, rule: Rc<dyn Rule>) {
         self.rules.push(rule);
     }
@@ -41,6 +43,7 @@ impl RuleSet {
             self.rules.remove(idx);
         }
     }
+    */
 
     pub fn apply_chip_drawn_rules(&self, player: Rc<RefCell<Player>>, game: &Game) {
         for rule in self.rules.iter() {

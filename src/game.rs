@@ -16,9 +16,11 @@ pub trait Rule {
 
 pub struct Game {
     players: Vec<Rc<RefCell<Player>>>,
-    rules: RuleSet,
     bonus_die: BonusDie,
-    turn: u8,
+    pub rules: RuleSet,
+    pub turn: u8,
+    pub rubies_to_fill_flask: u8,
+    pub rubies_to_move_drop: u8,
 }
 
 impl Game {
@@ -32,6 +34,8 @@ impl Game {
             rules,
             bonus_die,
             turn: 1,
+            rubies_to_fill_flask: 2,
+            rubies_to_move_drop: 2,
         }
     }
 
@@ -46,21 +50,48 @@ impl Game {
             .expect("player doesn't exist in game")
     }
 
-    pub fn rules(&self) -> &RuleSet {
-        &self.rules
-    }
+    fn calculate_rat_tails(&self, player: &Rc<RefCell<Player>>) -> u8 {
+        const RAT_TAIL_BEFORE: [u16; 23] = [
+            2, 5, 8, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49,
+        ];
+        let leading_player_poaition = self
+            .players()
+            .iter()
+            .map(|p| p.victory_points())
+            .max()
+            .unwrap();
 
-    pub fn turn(&self) -> u8 {
-        self.turn
-    }
+        let player_position = player.borrow().victory_points();
 
-    fn calculate_rat_tails(&self, _player: &Player) -> u8 {
-        0 // TODO
+        let mut rat_tails = 0;
+        if player_position < leading_player_poaition {
+            for pos in player_position + 1..=leading_player_poaition {
+                if RAT_TAIL_BEFORE.contains(&(pos % 50)) {
+                    rat_tails += 1;
+                }
+            }
+        }
+        rat_tails
     }
 }
 
 fn fill_cauldron_phase(game: &Game) {
     let mut active_players = game.players.clone();
+
+    for player in &active_players {
+        let drop_position = player.borrow().drop_position();
+        let rat_tails = game.calculate_rat_tails(player);
+        player
+            .borrow_mut()
+            .cauldron_mut()
+            .increase_position(drop_position + rat_tails);
+
+        log::debug!(
+            "{player} starting draw [{drop_position} + {rat_tails}]: {bag:?}",
+            player = player.borrow(),
+            bag = player.borrow().bag(),
+        );
+    }
 
     while !active_players.is_empty() {
         for player in &active_players {
@@ -158,7 +189,36 @@ fn buy_chips_phase(game: &Game, player: &Rc<RefCell<Player>>, coins: u8) {
 }
 
 fn spend_rubies_phase(game: &Game, player: &Rc<RefCell<Player>>) {
-    // TODO
+    if !player.borrow().flask() && player.borrow().rubies() >= game.rubies_to_fill_flask {
+        if player.borrow().wants_to_pay_rubies_to_fill_flask(game) {
+            let mut player = player.borrow_mut();
+            player.subtract_rubies(game.rubies_to_fill_flask);
+            player.fill_flask();
+            log::info!(
+                "{player} fills flask for {price} rubies",
+                price = game.rubies_to_fill_flask
+            );
+        }
+    }
+
+    let mut drop_moves = 0;
+    while player.borrow().rubies() >= game.rubies_to_move_drop {
+        if player.borrow().wants_to_pay_rubies_to_move_drop(game) {
+            let mut player = player.borrow_mut();
+            player.subtract_rubies(game.rubies_to_move_drop);
+            player.move_drop();
+            drop_moves += 1;
+        } else {
+            break;
+        }
+    }
+    if drop_moves > 0 {
+        log::info!(
+            "{player} moves drop {drop_moves} places for {price} rubies",
+            player = player.borrow(),
+            price = game.rubies_to_move_drop * drop_moves
+        );
+    }
 }
 
 fn round(game: &mut Game) {
@@ -212,11 +272,12 @@ fn round(game: &mut Game) {
 pub fn run(game: &mut Game) {
     for turn in 1..=9 {
         log::info!("start of round {turn}");
-        for player in game.players() {
-            log::info!("  {player} score: {score}", score = player.victory_points());
-        }
         game.turn = turn;
         round(game);
+        log::info!("after round {turn}");
+        for player in game.players() {
+            log::info!("{player} score: {score}", score = player.victory_points());
+        }
     }
 
     // TODO: calculate final score
@@ -224,9 +285,5 @@ pub fn run(game: &mut Game) {
     for player in game.players.iter() {
         let player = player.borrow();
         log::debug!("{player:#?}");
-    }
-    for player in game.players.iter() {
-        let player = player.borrow();
-        println!("{player}: {score}", score = player.victory_points());
     }
 }

@@ -7,7 +7,7 @@ pub struct Score {
     pub ruby: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cauldron {
     limit: u8,
     position: u8,

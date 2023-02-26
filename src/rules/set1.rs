@@ -71,13 +71,15 @@ impl Rule for Blue {
             .clone()
             .map(|idx| chips.remove(idx));
 
+        log::debug!("choose {chip:?}, returning {chips:?}");
+
         // return not-chosen chips
         player.borrow_mut().bag_mut().append(&mut chips);
 
         // add the chosen one
         if let Some(chip) = chip {
             player.borrow_mut().add_chip_to_cauldron(chip);
-            game.rules().apply_chip_drawn_rules(player, game);
+            game.rules.apply_chip_drawn_rules(player, game);
         }
     }
 }
@@ -86,7 +88,7 @@ pub struct Yellow;
 
 impl Rule for Yellow {
     fn purchase_options(&self, game: &Game) -> Vec<(Chip, u8)> {
-        if game.turn() < 2 {
+        if game.turn < 2 {
             return vec![];
         }
         vec![(Chip::Yellow1, 8), (Chip::Yellow2, 12), (Chip::Yellow4, 18)]
@@ -94,16 +96,18 @@ impl Rule for Yellow {
 
     fn yellow_chip_drawn(&self, player: Rc<RefCell<Player>>, _game: &Game, _value: u8) {
         let mut player = player.borrow_mut();
-        let cauldron = player.cauldron_mut();
-        let yellow_chip = cauldron.remove_last().unwrap();
-        if let Some(chip) = cauldron.remove_last() {
+        let yellow_chip = player.cauldron_mut().remove_last().unwrap();
+        if let Some(chip) = player.cauldron_mut().remove_last() {
             if chip.color() == Color::White {
-                cauldron.increase_position(chip.value());
+                log::debug!("returning {chip} to bag");
+                player.cauldron_mut().increase_position(chip.value());
+                player.add_chip_to_bag(chip);
             } else {
-                cauldron.add_chip(chip);
+                log::debug!("no white chip to return");
+                player.add_chip_to_cauldron(chip);
             }
         }
-        cauldron.add_chip(yellow_chip);
+        player.add_chip_to_cauldron(yellow_chip);
     }
 }
 
@@ -111,7 +115,7 @@ pub struct Purple;
 
 impl Rule for Purple {
     fn purchase_options(&self, game: &Game) -> Vec<(Chip, u8)> {
-        if game.turn() < 3 {
+        if game.turn < 3 {
             return vec![];
         }
         vec![(Chip::Purple1, 9)]

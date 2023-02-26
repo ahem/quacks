@@ -17,4 +17,6 @@ pub trait Strategy {
         options: &Vec<Vec<Chip>>,
     ) -> Option<usize>;
     fn choose_chips_to_add_to_cauldon(&self, player: &Player, chips: &Vec<Chip>) -> Option<usize>;
+    fn wants_to_pay_rubies_to_fill_flask(&self, game: &Game, player: &Player) -> bool;
+    fn wants_to_pay_rubies_to_move_drop(&self, game: &Game, player: &Player) -> bool;
 }

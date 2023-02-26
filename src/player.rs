@@ -6,6 +6,7 @@ use rand::{rngs::SmallRng, Rng};
 
 use crate::{cauldron::Cauldron, chip::Chip, chip::Color, game::Game, strategy::Strategy};
 
+#[derive(Clone)]
 pub struct Player {
     name: String,
     score: u16,
@@ -107,7 +108,13 @@ impl Player {
     }
 
     pub fn use_flask(&mut self) {
+        assert_eq!(self.flask, true);
         self.flask = false;
+    }
+
+    pub fn fill_flask(&mut self) {
+        assert_eq!(self.flask, false);
+        self.flask = true;
     }
 
     pub fn can_use_flask(&self) -> bool {
@@ -127,6 +134,10 @@ impl Player {
 
     pub fn add_rubies(&mut self, cnt: u8) {
         self.rubies += cnt;
+    }
+
+    pub fn subtract_rubies(&mut self, cnt: u8) {
+        self.rubies -= cnt;
     }
 
     pub fn victory_points(&self) -> u16 {
@@ -164,5 +175,13 @@ impl Player {
 
     pub fn choose_chips_to_add_to_cauldon(&self, chips: &Vec<Chip>) -> Option<usize> {
         self.strategy.choose_chips_to_add_to_cauldon(&self, chips)
+    }
+
+    pub fn wants_to_pay_rubies_to_fill_flask(&self, game: &Game) -> bool {
+        self.strategy.wants_to_pay_rubies_to_fill_flask(game, &self)
+    }
+
+    pub fn wants_to_pay_rubies_to_move_drop(&self, game: &Game) -> bool {
+        self.strategy.wants_to_pay_rubies_to_move_drop(game, &self)
     }
 }

@@ -68,4 +68,17 @@ impl Strategy for SimpleStrategy {
             None
         }
     }
+
+    fn wants_to_pay_rubies_to_fill_flask(&self, _: &Game, _: &Player) -> bool {
+        // fill the flask sometimes, at other times move a drop
+        return self.rng.borrow_mut().gen_bool(0.5);
+    }
+
+    fn wants_to_pay_rubies_to_move_drop(&self, game: &Game, player: &Player) -> bool {
+        // always buy if there is a discount or has plenty
+        if game.rubies_to_move_drop < 2 || player.rubies() > 2 {
+            return true;
+        }
+        return self.rng.borrow_mut().gen_bool(0.5);
+    }
 }

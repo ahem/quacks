@@ -19,7 +19,7 @@ use strategy::{prefer_blue::PreferBlueStrategy, simple::SimpleStrategy};
 
 pub fn create_rng(seed: Option<u64>) -> Rc<RefCell<SmallRng>> {
     let seed = seed.unwrap_or_else(|| SmallRng::from_entropy().gen());
-    let seed = 17451425246857276322;
+    // let seed = 17451425246857276322;
     log::info!("Seed: {seed}");
     Rc::new(RefCell::new(SmallRng::seed_from_u64(seed)))
 }
@@ -27,8 +27,15 @@ pub fn create_rng(seed: Option<u64>) -> Rc<RefCell<SmallRng>> {
 pub fn main() {
     env_logger::init();
     let rng = create_rng(None);
-    let bonus_die = BonusDie::new(rng.clone());
-
+    let rules = RuleSet::new(vec![
+        Rc::new(rules::core::Black),
+        Rc::new(rules::core::Orange),
+        Rc::new(rules::set1::Blue),
+        Rc::new(rules::set1::Green),
+        Rc::new(rules::set1::Red),
+        Rc::new(rules::set1::Yellow),
+        Rc::new(rules::set1::Purple),
+    ]);
     let players = vec![
         Player::new(
             "Player 1",
@@ -42,17 +49,23 @@ pub fn main() {
         ),
     ];
 
-    let rules = RuleSet::new(vec![
-        Rc::new(rules::core::Black),
-        Rc::new(rules::core::Orange),
-        Rc::new(rules::set1::Blue),
-        Rc::new(rules::set1::Green),
-        Rc::new(rules::set1::Red),
-        Rc::new(rules::set1::Yellow),
-        Rc::new(rules::set1::Purple),
-    ]);
+    let mut wins = vec![0, 0];
 
-    let mut game = Game::new(players, rules, bonus_die);
+    for _ in 0..1000 {
+        let mut game = Game::new(players.clone(), rules.clone(), BonusDie::new(rng.clone()));
+        run(&mut game);
 
-    run(&mut game);
+        let mut results: Vec<_> = game
+            .players()
+            .iter()
+            .map(|p| p.victory_points())
+            .enumerate()
+            .collect();
+        results.sort_by_key(|(_, score)| *score);
+        wins[results[0].0] += 1;
+    }
+
+    for (idx, player) in players.iter().enumerate() {
+        println!("{player} won {x} times", x = wins[idx]);
+    }
 }
