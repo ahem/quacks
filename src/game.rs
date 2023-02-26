@@ -98,10 +98,10 @@ fn fill_cauldron_phase(game: &Game) {
         let cauldron = player.cauldron();
         let score = cauldron.score();
         if cauldron.is_exploded() {
-            println!("{player} exploded!!!");
+            log::info!("{player} exploded!!!");
         }
-        println!("{player} finished drawing: {cauldron:#?}");
-        println!("{player} {score:?}");
+        log::debug!("{player} finished drawing: {cauldron:#?}");
+        log::info!("{player} {score:?}");
     }
 }
 
@@ -124,7 +124,7 @@ fn bonus_die_phase(game: &Game) {
         .filter(|p| p.borrow().cauldron().score() == max_score);
 
     for player in players {
-        println!("{player} rolls bonus die", player = player.borrow());
+        log::info!("{player} rolls bonus die", player = player.borrow());
         let roll = game.bonus_die.roll();
         match roll {
             BonusDieResult::OrangeChip => {
@@ -151,7 +151,7 @@ fn buy_chips_phase(game: &Game, player: &Rc<RefCell<Player>>, coins: u8) {
         if let Some(chips) = options.get(idx) {
             for chip in chips {
                 player.borrow_mut().add_chip_to_bag(*chip);
-                println!("{player} bought {chip}", player = player.borrow());
+                log::info!("{player} bought {chip}", player = player.borrow());
             }
         }
     }
@@ -211,9 +211,9 @@ fn round(game: &mut Game) {
 
 pub fn run(game: &mut Game) {
     for turn in 1..=9 {
-        println!("start of round {turn}");
+        log::info!("start of round {turn}");
         for player in game.players() {
-            println!("  {player} score: {score}", score = player.victory_points());
+            log::info!("  {player} score: {score}", score = player.victory_points());
         }
         game.turn = turn;
         round(game);
@@ -223,6 +223,10 @@ pub fn run(game: &mut Game) {
 
     for player in game.players.iter() {
         let player = player.borrow();
-        println!("{player:#?}");
+        log::debug!("{player:#?}");
+    }
+    for player in game.players.iter() {
+        let player = player.borrow();
+        println!("{player}: {score}", score = player.victory_points());
     }
 }

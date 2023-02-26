@@ -29,7 +29,7 @@ impl BonusDie {
             6 => BonusDieResult::Drop,
             _ => unreachable!(),
         };
-        println!("bonus die result: {result:?}");
+        log::info!("bonus die result: {result:?}");
         result
     }
 }

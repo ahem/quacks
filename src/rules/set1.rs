@@ -21,7 +21,7 @@ impl Rule for Green {
             .filter(|c| c.color() == Color::Green)
             .count();
         if cnt > 0 {
-            println!(
+            log::info!(
                 "{player} recieves {cnt} rubies from green chips",
                 player = player.borrow()
             );

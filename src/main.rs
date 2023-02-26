@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use bonus_die::BonusDie;
-use rand::{rngs::SmallRng, SeedableRng};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 mod bonus_die;
 mod cauldron;
@@ -12,13 +11,22 @@ mod player;
 mod rules;
 mod strategy;
 
+use bonus_die::BonusDie;
 use game::{run, Game};
 use player::Player;
 use rules::RuleSet;
 use strategy::{prefer_blue::PreferBlueStrategy, simple::SimpleStrategy};
 
+pub fn create_rng(seed: Option<u64>) -> Rc<RefCell<SmallRng>> {
+    let seed = seed.unwrap_or_else(|| SmallRng::from_entropy().gen());
+    let seed = 17451425246857276322;
+    log::info!("Seed: {seed}");
+    Rc::new(RefCell::new(SmallRng::seed_from_u64(seed)))
+}
+
 pub fn main() {
-    let rng = Rc::new(RefCell::new(SmallRng::from_entropy()));
+    env_logger::init();
+    let rng = create_rng(None);
     let bonus_die = BonusDie::new(rng.clone());
 
     let players = vec![

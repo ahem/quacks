@@ -82,7 +82,7 @@ impl Player {
 
     pub fn add_chip_to_cauldron(&mut self, chip: Chip) {
         self.cauldron.add_chip(chip);
-        println!("{self} added {chip} to cauldron");
+        log::info!("{self} added {chip} to cauldron");
     }
 
     pub fn empty_cauldron(&mut self) {
