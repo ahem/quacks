@@ -60,8 +60,14 @@ impl Rule for Blue {
     }
 
     fn blue_chip_drawn(&self, player: Rc<RefCell<Player>>, game: &Game, value: u8) {
+        if player.borrow().cauldron().is_full() {
+            return;
+        }
         let mut chips = vec![];
         for _ in 0..value {
+            if player.borrow().bag().is_empty() {
+                break;
+            }
             chips.push(player.borrow_mut().draw());
         }
 

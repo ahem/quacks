@@ -8,19 +8,23 @@ use crate::chip::{Chip, Color};
 use crate::game::Game;
 use crate::player::Player;
 
-pub struct PreferBlueStrategy {
+pub struct PreferColorStrategy {
+    preferred_color: Color,
     rng: Rc<RefCell<SmallRng>>,
 }
 
-impl PreferBlueStrategy {
-    pub fn new(rng: Rc<RefCell<SmallRng>>) -> Self {
-        Self { rng }
+impl PreferColorStrategy {
+    pub fn new(preferred_color: Color, rng: Rc<RefCell<SmallRng>>) -> Self {
+        Self {
+            rng,
+            preferred_color,
+        }
     }
 }
 
-impl Strategy for PreferBlueStrategy {
+impl Strategy for PreferColorStrategy {
     fn name(&self) -> String {
-        String::from("PreferBlueStrategy")
+        format!("PreferColorStrategy({col:?})", col = self.preferred_color)
     }
 
     fn continue_drawing(&self, _: &Game, player: &Player) -> bool {
@@ -52,13 +56,13 @@ impl Strategy for PreferBlueStrategy {
         _: &Player,
         choices: &Vec<Vec<Chip>>,
     ) -> Option<usize> {
-        let index_of_first_blue = choices
+        let index_of_first_preferred = choices
             .iter()
             .enumerate()
-            .filter(|(_, chips)| chips.iter().any(|c| c.color() == Color::Blue))
+            .filter(|(_, chips)| chips.iter().any(|c| c.color() == self.preferred_color))
             .map(|(idx, _)| idx)
             .next();
-        return index_of_first_blue.or(Some(0));
+        return index_of_first_preferred.or(Some(0));
     }
 
     fn choose_chips_to_add_to_cauldon(&self, _: &Player, chips: &Vec<Chip>) -> Option<usize> {
@@ -69,15 +73,15 @@ impl Strategy for PreferBlueStrategy {
             .filter(|(_, c)| c.color() != Color::White)
             .collect();
 
-        let mut blue_choices: Vec<_> = non_white_choices
+        let mut preferred_choices: Vec<_> = non_white_choices
             .iter()
             .cloned()
-            .filter(|(_, c)| c.color() == Color::Blue)
+            .filter(|(_, c)| c.color() == self.preferred_color)
             .collect();
 
-        blue_choices.sort_by_key(|(_, c)| c.value());
+        preferred_choices.sort_by_key(|(_, c)| c.value());
 
-        blue_choices
+        preferred_choices
             .last()
             .or(non_white_choices.first())
             .map(|(idx, _)| *idx)

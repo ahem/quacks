@@ -2,7 +2,7 @@ use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use crate::bonus_die::{BonusDie, BonusDieResult};
-use crate::chip::Chip;
+use crate::chip::{Chip, Color};
 use crate::player::Player;
 use crate::rules::RuleSet;
 
@@ -109,6 +109,10 @@ fn fill_cauldron_phase(game: &Game) {
                 let chip = player.cauldron_mut().remove_last().unwrap();
                 player.bag_mut().push(chip);
                 player.use_flask();
+                log::info!(
+                    "{player} used falsk to remove {chip} (white total: {n})",
+                    n = player.cauldron().total_value_of(Color::White)
+                );
             }
         }
 

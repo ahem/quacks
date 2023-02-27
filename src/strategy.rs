@@ -2,7 +2,7 @@ use crate::chip::Chip;
 use crate::game::Game;
 use crate::player::Player;
 
-pub mod prefer_blue;
+pub mod prefer_color;
 pub mod simple;
 
 pub trait Strategy {

@@ -83,7 +83,10 @@ impl Player {
 
     pub fn add_chip_to_cauldron(&mut self, chip: Chip) {
         self.cauldron.add_chip(chip);
-        log::info!("{self} added {chip} to cauldron");
+        log::info!(
+            "{self} added {chip} to cauldron (white total: {n})",
+            n = self.cauldron.total_value_of(Color::White)
+        );
     }
 
     pub fn empty_cauldron(&mut self) {
