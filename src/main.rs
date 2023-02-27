@@ -27,18 +27,22 @@ mod rng {
 
 pub fn main() {
     env_logger::init();
-    let mut wins = vec![0, 0];
+    let mut wins = vec![0, 0, 0, 0];
+
+    let rules = RuleSet::new(vec![
+        Rc::new(rules::core::Black),
+        Rc::new(rules::core::Orange),
+        Rc::new(rules::set1::Blue),
+        Rc::new(rules::set1::Green),
+        Rc::new(rules::set1::Red),
+        Rc::new(rules::set1::Yellow),
+        Rc::new(rules::set1::Purple),
+    ]);
+
+    let mut player_names: Vec<String> = vec![];
+
     for _ in 0..10000 {
         let rng = rng::create_rng(None);
-        let rules = RuleSet::new(vec![
-            Rc::new(rules::core::Black),
-            Rc::new(rules::core::Orange),
-            Rc::new(rules::set1::Blue),
-            Rc::new(rules::set1::Green),
-            Rc::new(rules::set1::Red),
-            Rc::new(rules::set1::Yellow),
-            Rc::new(rules::set1::Purple),
-        ]);
         let players = vec![
             Player::new(
                 "Player 1",
@@ -48,9 +52,20 @@ pub fn main() {
             Player::new(
                 "Player 2",
                 rng.clone(),
-                Rc::new(PreferColorStrategy::new(Color::Blue, rng.clone())),
+                Rc::new(PreferColorStrategy::new(Color::Red, rng.clone())),
+            ),
+            Player::new(
+                "Player 3",
+                rng.clone(),
+                Rc::new(PreferColorStrategy::new(Color::Yellow, rng.clone())),
+            ),
+            Player::new(
+                "Player 4",
+                rng.clone(),
+                Rc::new(PreferColorStrategy::new(Color::Green, rng.clone())),
             ),
         ];
+        player_names = players.iter().map(|p| format!("{p}")).collect();
 
         let mut game = Game::new(players.clone(), rules.clone(), BonusDie::new(rng.clone()));
         run(&mut game);
@@ -64,7 +79,10 @@ pub fn main() {
         results.sort_by_key(|(_, score)| *score);
         wins[results[0].0] += 1;
     }
-    for (idx, wins) in wins.iter().enumerate() {
-        println!("player {n} won {wins} times", n = idx + 1);
+
+    let mut final_result: Vec<_> = player_names.iter().zip(wins).collect();
+    final_result.sort_by_key(|(_, wins)| *wins);
+    for (name, wins) in final_result.iter().rev() {
+        println!("{name} won {wins} times");
     }
 }
