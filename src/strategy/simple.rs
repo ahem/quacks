@@ -23,12 +23,15 @@ impl Strategy for SimpleStrategy {
         String::from("SimpleStrategy")
     }
 
-    fn continue_drawing(&self, _: &Game, player: &Player) -> bool {
+    fn continue_drawing(&self, game: &Game, player: &Player) -> bool {
         let change = player.cauldron().chance_to_explode(player.bag());
-        if change < 1.0 {
+
+        if game.turn < 4 {
+            change < 1.0
+        } else if game.turn < 6 {
             self.rng.borrow_mut().gen_bool((1.0 - change).into())
         } else {
-            false
+            change == 0.0
         }
     }
 
@@ -42,7 +45,6 @@ impl Strategy for SimpleStrategy {
     }
 
     fn buy_instead_of_points(&self, _: &Game, _player: &Player) -> bool {
-        // self.rng.borrow_mut().gen_bool(0.5)
         true
     }
 
@@ -52,30 +54,35 @@ impl Strategy for SimpleStrategy {
         _: &Player,
         _: &Vec<Vec<Chip>>,
     ) -> Option<usize> {
+        // always just buy the first (most expensive) option
         Some(0)
     }
 
     fn choose_chips_to_add_to_cauldon(&self, _: &Player, chips: &Vec<Chip>) -> Option<usize> {
-        let choices: Vec<usize> = chips
+        let non_white_choices: Vec<usize> = chips
             .iter()
             .enumerate()
             .filter_map(|(n, c)| (c.color() != Color::White).then_some(n))
             .collect();
-        if !choices.is_empty() {
-            let idx = self.rng.borrow_mut().gen_range(0..choices.len());
-            Some(choices[idx])
+        if !non_white_choices.is_empty() {
+            let idx = self.rng.borrow_mut().gen_range(0..non_white_choices.len());
+            Some(non_white_choices[idx])
         } else {
             None
         }
     }
 
-    fn wants_to_pay_rubies_to_fill_flask(&self, _: &Game, _: &Player) -> bool {
+    fn wants_to_pay_rubies_to_fill_flask(&self, game: &Game, _: &Player) -> bool {
+        if game.rubies_to_fill_flask < 2 {
+            // always buy if there is a discount
+            return true;
+        }
         // fill the flask sometimes, at other times move a drop
         return self.rng.borrow_mut().gen_bool(0.5);
     }
 
     fn wants_to_pay_rubies_to_move_drop(&self, game: &Game, player: &Player) -> bool {
-        // always buy if there is a discount or has plenty
+        // always buy if there is a discount or has plenty of rubies
         if game.rubies_to_move_drop < 2 || player.rubies() > 2 {
             return true;
         }

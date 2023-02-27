@@ -29,6 +29,7 @@ impl Strategy for PreferColorStrategy {
 
     fn continue_drawing(&self, _: &Game, player: &Player) -> bool {
         let change = player.cauldron().chance_to_explode(player.bag());
+        // TODO: in round one, draw at least to be able to buy preferred color
         if change < 1.0 {
             self.rng.borrow_mut().gen_bool((1.0 - change).into())
         } else {

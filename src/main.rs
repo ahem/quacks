@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 mod bonus_die;
+mod cards;
 mod cauldron;
 mod chip;
 mod game;
@@ -52,17 +53,17 @@ pub fn main() {
             Player::new(
                 "Player 2",
                 rng.clone(),
-                Rc::new(PreferColorStrategy::new(Color::Red, rng.clone())),
+                Rc::new(PreferColorStrategy::new(Color::Black, rng.clone())),
             ),
             Player::new(
                 "Player 3",
                 rng.clone(),
-                Rc::new(PreferColorStrategy::new(Color::Yellow, rng.clone())),
+                Rc::new(PreferColorStrategy::new(Color::Blue, rng.clone())),
             ),
             Player::new(
                 "Player 4",
                 rng.clone(),
-                Rc::new(PreferColorStrategy::new(Color::Green, rng.clone())),
+                Rc::new(PreferColorStrategy::new(Color::Yellow, rng.clone())),
             ),
         ];
         player_names = players.iter().map(|p| format!("{p}")).collect();
@@ -77,6 +78,7 @@ pub fn main() {
             .enumerate()
             .collect();
         results.sort_by_key(|(_, score)| *score);
+        results.reverse();
         wins[results[0].0] += 1;
     }
 
