@@ -10,6 +10,7 @@ mod rules;
 mod strategy;
 
 use bonus_die::BonusDie;
+use cards::FortuneTellerCards;
 use chip::Color;
 use game::{run, Game};
 use player::Player;
@@ -68,7 +69,12 @@ pub fn main() {
         ];
         player_names = players.iter().map(|p| format!("{p}")).collect();
 
-        let mut game = Game::new(players.clone(), rules.clone(), BonusDie::new(rng.clone()));
+        let mut game = Game::new(
+            players.clone(),
+            rules.clone(),
+            BonusDie::new(rng.clone()),
+            FortuneTellerCards::new(rng.clone()),
+        );
         run(&mut game);
 
         let mut results: Vec<_> = game

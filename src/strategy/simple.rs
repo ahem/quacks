@@ -64,6 +64,7 @@ impl Strategy for SimpleStrategy {
             .enumerate()
             .filter_map(|(n, c)| (c.color() != Color::White).then_some(n))
             .collect();
+
         if !non_white_choices.is_empty() {
             let idx = self.rng.borrow_mut().gen_range(0..non_white_choices.len());
             Some(non_white_choices[idx])
@@ -72,20 +73,12 @@ impl Strategy for SimpleStrategy {
         }
     }
 
-    fn wants_to_pay_rubies_to_fill_flask(&self, game: &Game, _: &Player) -> bool {
-        if game.rubies_to_fill_flask < 2 {
-            // always buy if there is a discount
-            return true;
-        }
+    fn wants_to_pay_rubies_to_fill_flask(&self, _: &Game, _: &Player) -> bool {
         // fill the flask sometimes, at other times move a drop
         return self.rng.borrow_mut().gen_bool(0.5);
     }
 
-    fn wants_to_pay_rubies_to_move_drop(&self, game: &Game, player: &Player) -> bool {
-        // always buy if there is a discount or has plenty of rubies
-        if game.rubies_to_move_drop < 2 || player.rubies() > 2 {
-            return true;
-        }
+    fn wants_to_pay_rubies_to_move_drop(&self, _: &Game, _: &Player) -> bool {
         return self.rng.borrow_mut().gen_bool(0.5);
     }
 }

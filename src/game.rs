@@ -2,21 +2,15 @@ use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use crate::bonus_die::{BonusDie, BonusDieResult};
+use crate::cards::FortuneTellerCards;
 use crate::chip::{Chip, Color};
 use crate::player::Player;
-use crate::rules::RuleSet;
-
-pub trait Rule {
-    fn chip_drawn(&self, player: Rc<RefCell<Player>>);
-    fn cauldron_finished(&self, player: Rc<RefCell<Player>>);
-    fn black_chip(&self, player: Rc<RefCell<Player>>, game: &Game);
-    fn green_chip(&self, player: Rc<RefCell<Player>>);
-    fn purple_chip(&self, player: Rc<RefCell<Player>>);
-}
+use crate::rules::{Rule, RuleSet};
 
 pub struct Game {
     players: Vec<Rc<RefCell<Player>>>,
     bonus_die: BonusDie,
+    fortune_teller_cards: FortuneTellerCards,
     pub rules: RuleSet,
     pub turn: u8,
     pub rubies_to_fill_flask: u8,
@@ -24,7 +18,12 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(players: Vec<Player>, rules: RuleSet, bonus_die: BonusDie) -> Self {
+    pub fn new(
+        players: Vec<Player>,
+        rules: RuleSet,
+        bonus_die: BonusDie,
+        fortune_teller_cards: FortuneTellerCards,
+    ) -> Self {
         let players = players
             .into_iter()
             .map(|p| Rc::new(RefCell::new(p)))
@@ -33,6 +32,7 @@ impl Game {
             players,
             rules,
             bonus_die,
+            fortune_teller_cards,
             turn: 1,
             rubies_to_fill_flask: 2,
             rubies_to_move_drop: 2,
@@ -232,7 +232,11 @@ fn round(game: &mut Game) {
         }
     }
 
-    // TODO: draw card
+    /* // TODO: fortune teller cards
+    // draw card
+    let card_rule: Rc<dyn Rule> = Rc::from(game.fortune_teller_cards.pick());
+    game.rules.add_rule(card_rule.clone());
+    */
 
     fill_cauldron_phase(game);
 
@@ -271,6 +275,11 @@ fn round(game: &mut Game) {
     for player in game.players.iter() {
         player.borrow_mut().empty_cauldron();
     }
+
+    /* // TODO: fortune teller cards
+    // discard the fortune teller card
+    game.rules.remove_rule(&card_rule);
+    */
 }
 
 pub fn run(game: &mut Game) {

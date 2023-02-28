@@ -15,6 +15,7 @@ pub trait Rule {
     fn red_chip_drawn(&self, player: Rc<RefCell<Player>>, game: &Game, value: u8) {}
     fn blue_chip_drawn(&self, player: Rc<RefCell<Player>>, game: &Game, value: u8) {}
     fn yellow_chip_drawn(&self, player: Rc<RefCell<Player>>, game: &Game, value: u8) {}
+    fn orange_chip_drawn(&self, player: Rc<RefCell<Player>>, game: &Game, value: u8) {}
     fn black_chip(&self, player: Rc<RefCell<Player>>, game: &Game) {}
     fn green_chip(&self, player: Rc<RefCell<Player>>) {}
     fn purple_chip(&self, player: Rc<RefCell<Player>>) {}
@@ -33,7 +34,6 @@ impl RuleSet {
         Self { rules }
     }
 
-    /*
     pub fn add_rule(&mut self, rule: Rc<dyn Rule>) {
         self.rules.push(rule);
     }
@@ -43,7 +43,6 @@ impl RuleSet {
             self.rules.remove(idx);
         }
     }
-    */
 
     pub fn apply_chip_drawn_rules(&self, player: Rc<RefCell<Player>>, game: &Game) {
         for rule in self.rules.iter() {
